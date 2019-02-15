@@ -1,77 +1,109 @@
 import React, {Component, Fragment} from 'react'
 import {schedules} from '../schedules';
+import {SportSelector} from "./SportSelector";
+import {KeyDates} from './KeyDates';
+import {Legend} from './Legend';
 
 export class CalendarFrame extends Component {
-  componentDidMount() {
-    const frame = this.refs.frame;
-    const ctx = frame.getContext('2d');
-    this.setFrame(frame, ctx);
+  constructor() {
+    super()
+    this.state= {
+      context: null,
+      radius: null
+    }
   }
   
-  setFrame = (frame, context) => {
-    let radius = frame.height / 2;
-    context.translate(radius, radius);
-    radius = radius * .9;
-    
+  componentDidMount() {
+    this.instantiateCanvas()
+  }
+  
+  instantiateCanvas = async () => {
+    const frame = this.refs.frame;
+    const ctx = frame.getContext('2d');
+    await this.setState({
+      frame: frame,
+      context: ctx
+    })
+    this.setFrame(this.state.frame, this.state.context);
+  }
+  
+  restartCanvas = () => {
+    const {radius, context} = this.state;
     this.drawFrame(context, radius);
     this.drawMonths(context, radius);
   }
   
-  drawFrame = async (context, calendarRadius) => {
+  setFrame = () => {
+    const {frame, context} = this.state;
+    let radius = frame.height / 2;
+    context.translate(radius, radius);
+    radius = radius * .9;
+    this.setState({radius: radius})
+    try {
+      this.drawFrame(context, radius);
+      this.drawMonths(context, radius);
+    } catch (e) {
+      console.error("=============> e: ", e);
+    }
+  }
+  
+  drawFrame = async () => {
+    const {radius, context} = this.state;
     let outerGradient, calendarGradient, innerGradient;
     
     //draw frame
     context.beginPath();
-    context.arc(0, 0, calendarRadius, 0, 2 * Math.PI);
+    context.arc(0, 0, radius, 0, 2 * Math.PI);
     context.fillStyle='#44D7A8';
     context.fill()
     
     //frame gradient
-    outerGradient = context.createRadialGradient(0, 0, calendarRadius * 0.98, 0, 0, calendarRadius * 1.02);
+    outerGradient = context.createRadialGradient(0, 0, radius * 0.98, 0, 0, radius * 1.02);
     outerGradient.addColorStop(0, '#253529');
     outerGradient.addColorStop(.5, '#FFFFFF');
     outerGradient.addColorStop(1, '#253529');
     context.strokeStyle = outerGradient;
-    context.lineWidth = calendarRadius * 0.05;
+    context.lineWidth = radius * 0.05;
     context.stroke();
     context.closePath()
   
     //calendar border
     context.beginPath();
-    context.arc(0, 0, calendarRadius * .7, 0, 2 * Math.PI);
-    calendarGradient = context.createRadialGradient(0, 0, calendarRadius * 0.7, 0, 0, calendarRadius * .72);
+    context.arc(0, 0, radius * .7, 0, 2 * Math.PI);
+    calendarGradient = context.createRadialGradient(0, 0, radius * 0.7, 0, 0, radius * .72);
     calendarGradient.addColorStop(0, '#253529');
     calendarGradient.addColorStop(.25, '#FFFFFF');
     calendarGradient.addColorStop(.75, '#253529');
     calendarGradient.addColorStop(1, '#253529');
     context.strokeStyle = calendarGradient;
-    context.lineWidth = calendarRadius * 0.04;
+    context.lineWidth = radius * 0.04;
     context.stroke();
     context.closePath()
     
     //inner circle gradient
-    innerGradient = context.createRadialGradient(0, 0, calendarRadius * 0.05, 0, 0, calendarRadius * .15)
+    innerGradient = context.createRadialGradient(0, 0, radius * 0.05, 0, 0, radius * .2)
     innerGradient.addColorStop(0, '#FFCC33');
-    innerGradient.addColorStop(.25, '#FFFF66');
+    innerGradient.addColorStop(.2, '#FFFF66');
     innerGradient.addColorStop(.75, '#FF7A00');
     innerGradient.addColorStop(1, '#FFCC33');
-  
-    await this.drawSport(context, calendarRadius, schedules.baseball);
     //draw inner circle
     context.beginPath();
-    context.arc(0, 0, calendarRadius * .15, 0, 2 * Math.PI);
+    context.arc(0, 0, radius * .215, 0, 2 * Math.PI);
     context.fillStyle = innerGradient;
+    context.strokeStyle = '#222222'
+    context.lineWidth = 4;
     context.fill();
+    context.stroke();
     context.closePath();
-    
   }
   
   toRadians= (degrees) => {
     return degrees * (Math.PI/180);
   }
   
-  drawMonths = (context, radius) => {
+  drawMonths = () => {
     let ang;
+    const {context, radius} = this.state;
     const months = ['February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January'];
     context.fillStyle = '#253529';
     context.font = radius * .055 + 'px arial';
@@ -103,37 +135,42 @@ export class CalendarFrame extends Component {
     return radians;
   }
   
-  drawSport = (context, radius, sport) => {
-    let baseballStart = sport.startRegularSeason;
-    let baseballEnd = sport.endRegularSeason;
-    let sportGradient;
+  drawSport = (radius, sport) => {
+    const context = this.state.context;
+    
+    const self = this;
+    function drawSeason(start, end, grad1, grad2) {
+      let sportGradient;
   
-    console.error("=============> baseballStart: ", this.getDayOfYearAndCirclify(baseballStart));
-    console.error("=============> baseballEnd: ", this.getDayOfYearAndCirclify(baseballEnd));
-    context.beginPath();
-    context.rotate(this.toRadians(90))
-    //the start angle should be the beginning of the season,
-      // 0 is 3,
-      // .5 * pi is 6,
-      // Pi is 9,
-      // 1.5 * Pi is 12,
-    //need some sort of an algorithm that takes 1 based values and computes the start angle
-    context.arc(0, 0, radius * .45, 0, .5 * Math.PI, false);
-    sportGradient = context.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 0.7);
-    sportGradient.addColorStop(0, '#333333');
-    sportGradient.addColorStop(1, '#dd1818');
-    context.strokeStyle = sportGradient;
-    // context.strokeStyle ='#dd1818'
-    context.lineWidth = radius*.46;
-    context.stroke();
-    context.rotate(this.toRadians(-90))
-    context.closePath()
+      context.beginPath();
+      context.rotate(self.toRadians(-90))
+      const startAngle = start;
+      const endAngle = end;
+  
+      context.arc(0, 0, radius * .45, startAngle, endAngle, false);
+      sportGradient = context.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius * 0.7);
+      sportGradient.addColorStop(0, grad1);
+      sportGradient.addColorStop(1, grad2);
+      context.strokeStyle = sportGradient;
+      context.lineWidth = radius*.46;
+      context.stroke();
+      context.rotate(self.toRadians(90))
+      context.closePath()
+    }
+    drawSeason(self.getDayOfYearAndCirclify(sport.startPreSeason), self.getDayOfYearAndCirclify(sport.endPreSeason), '#093028', '#237A57', 'Preseason');
+    drawSeason(self.getDayOfYearAndCirclify(sport.startRegularSeason), self.getDayOfYearAndCirclify(sport.endRegularSeason), '#333333', '#dd1818', 'Regular Season');
+    drawSeason(self.getDayOfYearAndCirclify(sport.startPostSeason), self.getDayOfYearAndCirclify(sport.endPostSeason), '#4A00E0', '#8E2DE2', 'Postseason');
+
 }
   
   render() {
+    console.log(this.state)
     return(
       <Fragment>
         <canvas ref={'frame'} width={600} height={600} style={{backgroundColor:'#353839', border:'1px solid #A0E6FF'}} />
+        <Legend />
+        <SportSelector instantiateCanvas={this.restartCanvas} changeSportCallback={this.drawSport} context={this.state.context} radius={this.state.radius} />
+        <KeyDates />
       </Fragment>
     )
   }

@@ -31,3 +31,49 @@
     transform: rotate(360deg);
   }
 }
+
+.button-container{
+  height: 128px;
+  width:600px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.button {
+  background-image: linear-gradient(to left, #0F2027, #203A43, #2C5364);
+  padding: 4px 16px;
+  border: #bdc3c7 2px solid;
+  border-radius: 15%;
+}
+
+.bad{
+  background-image: linear-gradient(to left, #c31432, #240b36);
+}
+
+.bad:hover{
+  background-image: linear-gradient(to left, #C02425, #F0CB35);
+}
+
+.button:hover {
+  background-image: linear-gradient(to left, #a8ff78, #78ffd6);
+  color: black;
+  border: transparent 2px solid;
+  cursor: pointer;
+}
+
+.legend-container{
+
+}
+
+.pre-season{
+
+}
+
+.regular-season{
+
+}
+
+.post-season{
+
+}
